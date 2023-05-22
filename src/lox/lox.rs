@@ -56,7 +56,7 @@ impl Lox {
         Ok(())
     }
 
-    fn run(&self, source: &str) -> Result<()> {
+    fn run(&self, _source: &str) -> Result<()> {
         Ok(())
     }
 
