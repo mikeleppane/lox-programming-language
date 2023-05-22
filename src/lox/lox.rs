@@ -4,12 +4,17 @@ use std::io::Write;
 
 use color_eyre::Result;
 
-pub struct Lox {}
+pub struct Lox {
+    had_error: bool,
+}
 
 const PRINT_USAGE: &str = "Usage lox [script]";
 
 impl Lox {
-    pub fn main(&self) -> Result<()> {
+    pub fn new() -> Self {
+        Self { had_error: true }
+    }
+    pub fn main(&mut self) -> Result<()> {
         let args_passed = std::env::args().count();
         match args_passed {
             n if n > 2 => {
@@ -35,23 +40,32 @@ impl Lox {
         Ok(())
     }
 
-    fn run_prompt(&self) -> Result<()> {
+    fn run_prompt(&mut self) -> Result<()> {
         let mut buffer = String::new();
         let stdin = io::stdin();
         let mut stdout = io::stdout();
         write!(stdout.lock(), "> ")?;
         stdout.flush()?;
         while stdin.read_line(&mut buffer).is_ok() {
-            let trimmed = buffer.trim_end();
-            println!("You typed: [{trimmed}]");
+            self.run(buffer.trim_end())?;
             buffer.clear();
             write!(stdout.lock(), ">")?;
             stdout.flush()?;
+            self.had_error = false;
         }
         Ok(())
     }
 
     fn run(&self, source: &str) -> Result<()> {
         Ok(())
+    }
+
+    pub fn error(&mut self, line: u64, message: &str) {
+        self.report(line, "", message);
+        self.had_error = true;
+    }
+
+    fn report(&self, line: u64, place: &str, message: &str) {
+        eprintln!("[line {}] Error {}: {}", line, place, message);
     }
 }

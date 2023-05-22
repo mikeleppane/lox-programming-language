@@ -5,7 +5,7 @@ use crate::lox::lox::Lox;
 mod lox;
 
 fn main() -> Result<()> {
-    let lox = Lox {};
+    let lox = Lox::new();
     lox.main()?;
     Ok(())
 }
