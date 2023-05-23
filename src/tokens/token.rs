@@ -1,17 +1,24 @@
 use std::any::Any;
 use std::fmt;
+use std::fmt::Debug;
 
 use crate::tokens::token_type::TokenType;
 
-struct Token<'a, T: Any + 'static> {
+#[derive(Debug)]
+pub struct Token<'a> {
     token_type: TokenType,
     lexeme: &'a str,
-    line: u64,
-    literal: T,
+    line: usize,
+    literal: Option<Box<dyn Any>>,
 }
 
-impl<'a, T> Token<'a, T> {
-    pub fn new(token_type: TokenType, lexeme: &'a str, literal: T, line: u64) -> Self {
+impl<'a> Token<'a> {
+    pub fn new(
+        token_type: TokenType,
+        lexeme: &'a str,
+        literal: Option<Box<dyn Any>>,
+        line: usize,
+    ) -> Self {
         Self {
             token_type,
             lexeme,
@@ -21,7 +28,7 @@ impl<'a, T> Token<'a, T> {
     }
 }
 
-impl<T: Any + 'static> fmt::Display for Token<'_, T> {
+impl<'a> fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", self.token_type, self.lexeme)
     }
@@ -33,6 +40,7 @@ mod test {
 
     #[test]
     fn token_new_creation() {
-        let token = Token::new(TokenType::AND, "+", "", 1);
+        let token = Token::new(TokenType::And, "+", None, 1);
+        println!("{token}")
     }
 }

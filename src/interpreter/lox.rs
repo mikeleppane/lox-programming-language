@@ -8,7 +8,7 @@ pub struct Lox {
     had_error: bool,
 }
 
-const PRINT_USAGE: &str = "Usage lox [script]";
+const PRINT_USAGE: &str = "Usage interpreter [script]";
 
 impl Lox {
     pub fn new() -> Self {

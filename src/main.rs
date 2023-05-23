@@ -1,8 +1,8 @@
 use color_eyre::Result;
 
-use crate::lox::lox::Lox;
+use crate::interpreter::lox::Lox;
 
-mod lox;
+mod interpreter;
 mod tokens;
 
 fn main() -> Result<()> {
