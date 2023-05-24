@@ -1,5 +1,6 @@
 use std::any::Any;
 
+use crate::interpreter::errors::report;
 use crate::tokens::token::Token;
 use crate::tokens::token_type::TokenType;
 
@@ -50,8 +51,37 @@ impl<'a> Scanner<'a> {
             '+' => self.add_plain_token(TokenType::Plus),
             ';' => self.add_plain_token(TokenType::Semicolon),
             '*' => self.add_plain_token(TokenType::Star),
-            _ => {}
+            '!' => match self.match_token('=') {
+                true => self.add_plain_token(TokenType::BangEqual),
+                false => self.add_plain_token(TokenType::Bang),
+            },
+            '=' => match self.match_token('=') {
+                true => self.add_plain_token(TokenType::EqualEqual),
+                false => self.add_plain_token(TokenType::Equal),
+            },
+            '<' => match self.match_token('=') {
+                true => self.add_plain_token(TokenType::LessEqual),
+                false => self.add_plain_token(TokenType::Less),
+            },
+            '>' => match self.match_token('=') {
+                true => self.add_plain_token(TokenType::GreaterEqual),
+                false => self.add_plain_token(TokenType::Greater),
+            },
+            _ => report(self.line, "", "Unexpected character."),
         }
+    }
+
+    fn match_token(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+        if let Some(c) = self.source.chars().nth(self.current) {
+            if c != expected {
+                return false;
+            }
+        }
+        self.current += 1;
+        true
     }
 
     fn advance(&mut self) -> Option<char> {

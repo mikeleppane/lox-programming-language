@@ -4,6 +4,8 @@ use std::io::Write;
 
 use color_eyre::Result;
 
+use crate::interpreter::errors::report;
+
 pub struct Lox {
     had_error: bool,
 }
@@ -60,12 +62,8 @@ impl Lox {
         Ok(())
     }
 
-    pub fn error(&mut self, line: u64, message: &str) {
-        self.report(line, "", message);
+    pub fn error(&mut self, line: usize, message: &str) {
+        report(line, "", message);
         self.had_error = true;
-    }
-
-    fn report(&self, line: u64, place: &str, message: &str) {
-        eprintln!("[line {}] Error {}: {}", line, place, message);
     }
 }
