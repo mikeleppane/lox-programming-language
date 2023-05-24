@@ -6,10 +6,10 @@ use crate::tokens::token_type::TokenType;
 
 #[derive(Debug)]
 pub struct Token<'a> {
-    token_type: TokenType,
-    lexeme: &'a str,
-    line: usize,
-    literal: Option<Box<dyn Any>>,
+    pub token_type: TokenType,
+    pub lexeme: &'a str,
+    pub line: usize,
+    pub literal: Option<Box<dyn Any>>,
 }
 
 impl<'a> Token<'a> {

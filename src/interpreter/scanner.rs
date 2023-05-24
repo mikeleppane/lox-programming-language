@@ -93,7 +93,7 @@ impl<'a> Scanner<'a> {
         self.add_token(token_type, None);
     }
 
-    fn add_token(&mut self, token_type: TokenType, literal: Option<Box<dyn Any>>) {
+    fn add_token(&mut self, token_type: TokenType, _literal: Option<Box<dyn Any>>) {
         let y = &self.source[self.start..self.current];
         self.tokens.push(Token::new(token_type, y, None, self.line));
     }
@@ -101,16 +101,23 @@ impl<'a> Scanner<'a> {
 
 #[cfg(test)]
 mod test {
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]
     fn scan_tokens() {
-        let source = "(){},.";
-        let mut scanner = Scanner::new(source);
+        let source = vec![
+            "(", ")", "{", "}", ",", ".", "<", ">", "!", "!=", "<=", ">=",
+        ];
+        let source_as_str = source.join("");
+        let mut scanner = Scanner::new(source_as_str.as_str());
         scanner.scan_tokens();
-        println!("{}", scanner.tokens.len());
-        for token in scanner.tokens {
-            println!("{:?}", token);
+        assert_eq!(scanner.tokens.len(), 13);
+        for (index, token) in scanner.tokens.iter().enumerate() {
+            if index < source.len() {
+                assert_eq!(token.lexeme, source[index]);
+            }
         }
     }
 }
