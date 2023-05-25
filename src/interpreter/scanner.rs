@@ -76,7 +76,6 @@ impl<'a> Scanner<'a> {
                 false => self.add_plain_token(TokenType::Slash),
             },
             '\n' => {
-                dbg!("UUSI RIVI");
                 self.line += 1;
             }
             ' ' => {}
