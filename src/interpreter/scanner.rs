@@ -67,6 +67,21 @@ impl<'a> Scanner<'a> {
                 true => self.add_plain_token(TokenType::GreaterEqual),
                 false => self.add_plain_token(TokenType::Greater),
             },
+            '/' => match self.match_token('/') {
+                true => {
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance();
+                    }
+                }
+                false => self.add_plain_token(TokenType::Slash),
+            },
+            '\n' => {
+                dbg!("UUSI RIVI");
+                self.line += 1;
+            }
+            ' ' => {}
+            '\r' => {}
+            '\t' => {}
             _ => report(self.line, "", "Unexpected character."),
         }
     }
@@ -85,8 +100,9 @@ impl<'a> Scanner<'a> {
     }
 
     fn advance(&mut self) -> Option<char> {
+        let c = self.source.chars().nth(self.current);
         self.current += 1;
-        self.source.chars().nth(self.current)
+        c
     }
 
     fn add_plain_token(&mut self, token_type: TokenType) {
@@ -97,6 +113,15 @@ impl<'a> Scanner<'a> {
         let y = &self.source[self.start..self.current];
         self.tokens.push(Token::new(token_type, y, None, self.line));
     }
+    fn peek(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+        self.source
+            .chars()
+            .nth(self.current)
+            .unwrap_or_else(|| panic!("No character at position {}", self.current))
+    }
 }
 
 #[cfg(test)]
@@ -104,6 +129,35 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use super::*;
+
+    #[test]
+    fn should_scan_comments() {
+        let source = "//\n";
+        let mut scanner = Scanner::new(source);
+        scanner.scan_tokens();
+        assert_eq!(scanner.tokens.len(), 1);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::Eof);
+    }
+
+    #[test]
+    fn should_scan_groups() {
+        let source = "((";
+        let mut scanner = Scanner::new(source);
+        scanner.scan_tokens();
+        assert_eq!(scanner.tokens.len(), 3);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::LeftParen);
+        assert_eq!(scanner.tokens[1].token_type, TokenType::LeftParen);
+    }
+
+    #[test]
+    fn should_scan_operators() {
+        let source = "!*+-/=<> <= ==";
+        let mut scanner = Scanner::new(source);
+        scanner.scan_tokens();
+        assert_eq!(scanner.tokens.len(), 11);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::Bang);
+        assert_eq!(scanner.tokens[1].token_type, TokenType::Star);
+    }
 
     #[test]
     fn scan_tokens() {
@@ -115,6 +169,7 @@ mod test {
         scanner.scan_tokens();
         assert_eq!(scanner.tokens.len(), 13);
         for (index, token) in scanner.tokens.iter().enumerate() {
+            dbg!(token);
             if index < source.len() {
                 assert_eq!(token.lexeme, source[index]);
             }
