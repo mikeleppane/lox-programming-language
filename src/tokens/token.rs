@@ -26,6 +26,14 @@ impl<'a> Token<'a> {
             literal,
         }
     }
+
+    pub fn literal_value<V: Sized + Debug + 'static>(&self) -> Option<&V> {
+        if self.token_type == TokenType::String {
+            let value = self.literal.as_ref().unwrap().downcast_ref::<V>();
+            return value;
+        }
+        None
+    }
 }
 
 impl<'a> fmt::Display for Token<'_> {
@@ -36,11 +44,21 @@ impl<'a> fmt::Display for Token<'_> {
 
 #[cfg(test)]
 mod test {
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]
     fn token_new_creation() {
         let token = Token::new(TokenType::And, "+", None, 1);
-        println!("{token}")
+        assert_eq!(token.token_type, TokenType::And);
+        assert_eq!(token.literal.is_none(), true);
+    }
+
+    #[test]
+    fn token_new_creation() {
+        let token = Token::new(TokenType::And, "+", None, 1);
+        assert_eq!(token.token_type, TokenType::And);
+        assert_eq!(token.literal.is_none(), true);
     }
 }

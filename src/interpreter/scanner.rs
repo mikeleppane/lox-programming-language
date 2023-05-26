@@ -81,6 +81,9 @@ impl<'a> Scanner<'a> {
             ' ' => {}
             '\r' => {}
             '\t' => {}
+            '"' => {
+                self.string();
+            }
             _ => report(self.line, "", "Unexpected character."),
         }
     }
@@ -108,9 +111,10 @@ impl<'a> Scanner<'a> {
         self.add_token(token_type, None);
     }
 
-    fn add_token(&mut self, token_type: TokenType, _literal: Option<Box<dyn Any>>) {
+    fn add_token(&mut self, token_type: TokenType, literal: Option<Box<dyn Any>>) {
         let y = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(token_type, y, None, self.line));
+        self.tokens
+            .push(Token::new(token_type, y, literal, self.line));
     }
     fn peek(&self) -> char {
         if self.is_at_end() {
@@ -120,6 +124,23 @@ impl<'a> Scanner<'a> {
             .chars()
             .nth(self.current)
             .unwrap_or_else(|| panic!("No character at position {}", self.current))
+    }
+
+    fn string(&mut self) {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+        if self.is_at_end() {
+            report(self.line, "", "Unterminated string");
+            return;
+        }
+        self.advance();
+
+        let value = self.source[self.start + 1..self.current - 1].to_string();
+        self.add_token(TokenType::String, Some(Box::new(value)))
     }
 }
 
@@ -156,6 +177,19 @@ mod test {
         assert_eq!(scanner.tokens.len(), 11);
         assert_eq!(scanner.tokens[0].token_type, TokenType::Bang);
         assert_eq!(scanner.tokens[1].token_type, TokenType::Star);
+    }
+
+    #[test]
+    fn should_scan_string_literals() {
+        let source = "\"this is a multistring input\"";
+        let mut scanner = Scanner::new(source);
+        scanner.scan_tokens();
+        let value = scanner.tokens[0].literal_value::<String>();
+        if let Some(v) = value {
+            assert_eq!(v, "this is a multistring input")
+        } else {
+            panic!("Should contain a value")
+        }
     }
 
     #[test]
