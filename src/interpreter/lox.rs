@@ -41,8 +41,7 @@ impl Lox {
         let content = fs::read_to_string(path)?;
         match self.run(content) {
             Ok(_) => {}
-            Err(m) => {
-                m.report("");
+            Err(_) => {
                 std::process::exit(65);
             }
         }

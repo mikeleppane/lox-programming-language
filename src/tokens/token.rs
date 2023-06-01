@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::tokens::token_type::TokenType;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Object {
     Num(f64),

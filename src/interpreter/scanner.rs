@@ -79,12 +79,27 @@ impl Scanner {
             },
             '/' => match self.is_match('/') {
                 true => {
-                    while self.peek() != '\n' && !self.is_at_end() {
-                        self.advance();
+                    while let Some(ch) = self.peek() {
+                        if ch != '\n' {
+                            self.advance();
+                        } else {
+                            break;
+                        }
                     }
                 }
                 false => self.add_token(TokenType::Slash),
             },
+            ' ' | '\r' | '\t' => {}
+            '\n' => {
+                self.line += 1;
+            }
+            '"' => {
+                self.string()?;
+            }
+            '0'..='9' => self.number(),
+            _ if c.is_ascii_alphabetic() || c == '_' => {
+                self.identifier();
+            }
             _ => {
                 return Err(LoxError::error(
                     self.line,
@@ -93,6 +108,56 @@ impl Scanner {
             }
         }
         Ok(())
+    }
+
+    fn identifier(&mut self) {
+        while Self::is_alpha(self.peek()) {
+            self.advance();
+        }
+
+        let text: String = self.source[self.start..self.current].iter().collect();
+        let Some(ttype) = Self::keyword(text.as_str()) else {
+            self.add_token(TokenType::Identifier);
+            return;
+        };
+        self.add_token(ttype);
+    }
+
+    fn number(&mut self) {
+        while Self::is_digit(self.peek()) {
+            self.advance();
+        }
+        if self.peek() == Some('.') && Self::is_digit(self.peek_next()) {
+            self.advance();
+            while Self::is_digit(self.peek()) {
+                self.advance();
+            }
+        }
+        let value = self.source[self.start..self.current]
+            .iter()
+            .collect::<String>();
+        let num = value
+            .parse()
+            .unwrap_or_else(|_| panic!("Could not parse {} to f64", value));
+        self.add_token_object(TokenType::Number, Some(Object::Num(num)));
+    }
+
+    fn is_digit(ch: Option<char>) -> bool {
+        let Some(ch) = ch else {
+            return false;
+        };
+        ch.is_ascii_digit()
+    }
+
+    fn is_alpha(ch: Option<char>) -> bool {
+        let Some(ch) = ch else {
+            return false;
+        };
+        ch.is_ascii_alphanumeric()
+    }
+
+    fn peek_next(&mut self) -> Option<char> {
+        self.source.get(self.current + 1).copied()
     }
 
     fn is_match(&mut self, expected: char) -> bool {
@@ -123,32 +188,58 @@ impl Scanner {
         self.tokens
             .push(Token::new(token_type, y, literal, self.line));
     }
-    fn peek(&self) -> char {
-        if self.is_at_end() {
-            return '\0';
-        }
-        self.source
-            .chars()
-            .nth(self.current)
-            .unwrap_or_else(|| panic!("No character at position {}", self.current))
+    fn peek(&self) -> Option<char> {
+        self.source.get(self.current).copied()
     }
-    //
-    // fn string(&mut self) {
-    //     while self.peek() != '"' && !self.is_at_end() {
-    //         if self.peek() == '\n' {
-    //             self.line += 1;
-    //         }
-    //         self.advance();
-    //     }
-    //     if self.is_at_end() {
-    //         report(self.line, "", "Unterminated string");
-    //         return;
-    //     }
-    //     self.advance();
-    //
-    //     let value = self.source[self.start + 1..self.current - 1].to_string();
-    //     self.add_token_object(TokenType::String, Some(Box::new(value)))
-    // }
+
+    fn string(&mut self) -> Result<(), LoxError> {
+        while let Some(ch) = self.peek() {
+            match ch {
+                '"' => {
+                    break;
+                }
+                '\n' => {
+                    self.line += 1;
+                }
+                _ => {}
+            }
+            self.advance();
+        }
+        if self.is_at_end() {
+            return Err(LoxError::error(
+                self.line,
+                "Unterminated string.".to_string(),
+            ));
+        }
+        self.advance();
+        let value = self.source[self.start + 1..self.current - 1]
+            .iter()
+            .collect();
+        self.add_token_object(TokenType::String, Some(Object::Str(value)));
+        Ok(())
+    }
+
+    fn keyword(check: &str) -> Option<TokenType> {
+        match check {
+            "and" => Some(TokenType::And),
+            "class" => Some(TokenType::Class),
+            "else" => Some(TokenType::Else),
+            "false" => Some(TokenType::False),
+            "for" => Some(TokenType::For),
+            "fun" => Some(TokenType::Fun),
+            "if" => Some(TokenType::IF),
+            "nil" => Some(TokenType::Nil),
+            "or" => Some(TokenType::OR),
+            "print" => Some(TokenType::Print),
+            "return" => Some(TokenType::Return),
+            "super" => Some(TokenType::Super),
+            "this" => Some(TokenType::This),
+            "true" => Some(TokenType::True),
+            "var" => Some(TokenType::Var),
+            "while" => Some(TokenType::While),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
