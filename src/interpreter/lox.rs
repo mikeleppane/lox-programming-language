@@ -4,7 +4,8 @@ use std::io::Write;
 
 use color_eyre::Result;
 
-use crate::interpreter::errors::report;
+use crate::interpreter::error::LoxError;
+use crate::interpreter::scanner::Scanner;
 
 pub struct Lox {
     had_error: bool,
@@ -38,7 +39,13 @@ impl Lox {
 
     fn run_file(&self, path: &str) -> Result<()> {
         let content = fs::read_to_string(path)?;
-        self.run(&content)?;
+        match self.run(content) {
+            Ok(_) => {}
+            Err(m) => {
+                m.report("");
+                std::process::exit(65);
+            }
+        }
         Ok(())
     }
 
@@ -49,21 +56,23 @@ impl Lox {
         write!(stdout.lock(), "> ")?;
         stdout.flush()?;
         while stdin.read_line(&mut buffer).is_ok() {
-            self.run(buffer.trim_end())?;
+            if buffer.is_empty() {
+                break;
+            }
+            if self.run(buffer.trim_end().to_string()).is_ok() {}
             buffer.clear();
-            write!(stdout.lock(), ">")?;
+            write!(stdout.lock(), "> ")?;
             stdout.flush()?;
             self.had_error = false;
         }
         Ok(())
     }
 
-    fn run(&self, _source: &str) -> Result<()> {
+    fn run(&self, source: String) -> Result<(), LoxError> {
+        let mut scanner = Scanner::new(source);
+        for token in scanner.scan_tokens()? {
+            println!("{:?}", token)
+        }
         Ok(())
-    }
-
-    pub fn error(&mut self, line: usize, message: &str) {
-        report(line, "", message);
-        self.had_error = true;
     }
 }

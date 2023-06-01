@@ -1,22 +1,42 @@
-use std::any::Any;
 use std::fmt;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 
 use crate::tokens::token_type::TokenType;
 
 #[derive(Debug)]
-pub struct Token<'a> {
-    pub token_type: TokenType,
-    pub lexeme: &'a str,
-    pub line: usize,
-    pub literal: Option<Box<dyn Any>>,
+pub enum Object {
+    Num(f64),
+    Str(String),
+    Nil,
+    True,
+    False,
 }
 
-impl<'a> Token<'a> {
+impl fmt::Display for Object {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Object::Num(x) => write!(f, "{x}"),
+            Object::Str(x) => write!(f, "{x}"),
+            Object::Nil => write!(f, "nil"),
+            Object::True => write!(f, "true"),
+            Object::False => write!(f, "false"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub line: usize,
+    pub literal: Option<Object>,
+}
+
+impl Token {
     pub fn new(
         token_type: TokenType,
-        lexeme: &'a str,
-        literal: Option<Box<dyn Any>>,
+        lexeme: String,
+        literal: Option<Object>,
         line: usize,
     ) -> Self {
         Self {
@@ -27,18 +47,37 @@ impl<'a> Token<'a> {
         }
     }
 
-    pub fn literal_value<V: Sized + Debug + 'static>(&self) -> Option<&V> {
-        if self.token_type == TokenType::String {
-            let value = self.literal.as_ref().unwrap().downcast_ref::<V>();
-            return value;
+    pub fn eof(line: usize) -> Self {
+        Self {
+            token_type: TokenType::Eof,
+            lexeme: "".to_string(),
+            line,
+            literal: None,
         }
-        None
     }
+
+    // pub fn literal_value<V: Sized + Debug + 'static>(&self) -> Option<&V> {
+    //     if self.token_type == TokenType::String {
+    //         let value = self.literal.as_ref().unwrap().downcast_ref::<V>();
+    //         return value;
+    //     }
+    //     None
+    // }
 }
 
-impl<'a> fmt::Display for Token<'_> {
+impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.token_type, self.lexeme)
+        write!(
+            f,
+            "{} {} {}",
+            self.token_type,
+            self.lexeme,
+            if let Some(literal) = &self.literal {
+                literal.to_string()
+            } else {
+                "None".to_string()
+            }
+        )
     }
 }
 
@@ -50,14 +89,7 @@ mod test {
 
     #[test]
     fn token_new_creation() {
-        let token = Token::new(TokenType::And, "+", None, 1);
-        assert_eq!(token.token_type, TokenType::And);
-        assert_eq!(token.literal.is_none(), true);
-    }
-
-    #[test]
-    fn token_new_creation() {
-        let token = Token::new(TokenType::And, "+", None, 1);
+        let token = Token::new(TokenType::And, "+".to_string(), None, 1);
         assert_eq!(token.token_type, TokenType::And);
         assert_eq!(token.literal.is_none(), true);
     }
